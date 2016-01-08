@@ -48,6 +48,13 @@ geneExpression[rownames(geneExpression) == id, fn]
 
 
 ```
+Use the function apply to find the median value of each column. What is the median value of these values?
+```{r}
+meds <- apply(geneExpression,2,median)
+median(meds)  
+```
+
+
 This problem is more advanced than the previous ones. Note that it might take you some time to solve and you should feel free to seek help in the discussion forum. The exercises is meant to motivate you to learn a an imporant R skills: creating functions to use with apply.
 
 Write a function that takes a vector of values e and a binary vector group coding two groups, and returns the p-value from a t-test: t.test( e[group==1], e[group==0])$p.value.
@@ -63,5 +70,18 @@ pval <- function(e, group){
 g <- factor(sampleInfo$group)
 
 min(apply(geneExpression, 1, pval, g))
+
+
+# Rafa's solution
+#
+#
+# myttest <- function(e,group){
+#   	x <- e[group==1]
+#   	y <- e[group==0]
+#     return( t.test(x,y)$p.value )
+# }
+# g <- factor(sampleInfo$group)
+# pvals <- apply(geneExpression,1,myttest, group=g)
+# min( pvals )
 ```
 

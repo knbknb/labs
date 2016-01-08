@@ -15,7 +15,7 @@ These exercises will help clarify that p-values are random variables and some of
 To see this, let's see how p-values change when we take different samples.
 ```{r}
 
-setwd("~/Documents/moocs/dataanaly-lifesci/03-advinference")
+#setwd("/mnt/hd2tb/Documents/moocs/dataanaly-lifesci/edx-genomicsclass-labs-knbknb-fork/exercises-knb/02-linmod")
 set.seed(1)
 library(downloader)
 url = "https://raw.githubusercontent.com/genomicsclass/dagdata/master/inst/extdata/femaleControlsPopulation.csv"
