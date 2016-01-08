@@ -1,0 +1,180 @@
+
+
+In this assessment we will define error controlling procedures for experimental data. We will make list of genes based on q-values. 
+We will also assess your understanding of false positives rates and false negative rates by asking you to create a Monte Carlo simulation.
+
+You will need to install the following libraries:
+        
+```{r}
+setwd("/mnt/hd2tb/Documents/moocs/dataanaly-lifesci/03-advinference")        
+#library(devtools)
+library(rafalib)
+
+#install_github("genomicsclass/GSE5859Subset")
+#install_bioc("genefilter")
+#install_bioc("qvalue")
+library(qvalue)
+```
+
+FDR Exercises #1 (1 point possible)
+
+Load the gene expression data
+```{r}
+
+
+library(GSE5859Subset)
+data(GSE5859Subset)
+
+```
+We are interested in comparing gene expression between the two groups defined in the sampleInfo table.
+
+Compute a p-value for each gene using the function rowttests from the genefilter package in Bioconductor.
+
+```{r}
+
+
+library(genefilter)
+#?rowttests
+set.seed(1)
+n <- nrow(geneExpression)
+nullHypothesis <- c( rep(TRUE,n))
+##Define groups to be used with rowttests
+g <- factor(sampleInfo$group )
+B <- 1 ##number of simulations
+calls_vec <-0
+system.time(
+        VandS <- replicate(B,{
+                ##matrix with control data (rows are tests, columns are mice)
+
+                dat <- geneExpression
+                
+                calls_vec <<- rowttests(dat,g)$p.value < alpha
+                
+                #c(sum(nullHypothesis & calls),sum(!nullHypothesis & calls))
+                cat("V = ",sum(nullHypothesis & calls_vec),
+                    "S = ",sum(!nullHypothesis & calls_vec), "\n")
+                
+        })
+)
+```
+
+How many genes have p-values smaller than 0.05?
+```{r}
+
+table(calls_vec, nullHypothesis)
+
+```
+
+
+FDR Exercises #2 (1 point possible)
+
+Apply the Bonferroni correction to the p-values obtained in question #1 to achieve a FWER of 0.05. How many genes are called significant under this procedure?
+
+```{r}
+
+
+bonf <- alpha/n
+table(rowttests(dat,g)$p.value < bonf)
+
+
+```
+Note that we went from over a thousand to just 10. One practical question we should ask is "are we being too conservative?". Note that we have not really assessed false negatives at all yet. 
+
+
+FDR Exercises #3 
+
+
+Note that the FDR is a property of a list of features, not each specific feature. The q-value relates FDR to an individual feature. To define the q-value we order features we tested by p-value then compute the FDRs for a list with the most significant, the two most significant, the three most significant, etc... The FDR of the list with the, say, m most significant tests is defined as the q-value of the m-th most significant feature. In other words, the q-value of a feature, is the FDR of the biggest list that includes that gene.
+
+In R, we can compute the q-value using the p.adjust function with the FDR option. Read the help file for p.adjust and then, for our gene expression dataset, compute how many genes achieve an FDR < 0.05
+
+
+FDR Exercises #4 
+
+Now use the qvalue function, in the Bioconductor qvalue package, to estimate q-values using the procedure described by Storey.
+
+Using this estimate how many genes have q-values below 0.05?
+
+
+FDR Exercises #5
+
+Read the help file for qvalue and report the estimated proportion of genes for which the null hypothesis is true π0=m0/m
+
+
+FDR Exercises #6 
+
+Note that we have the number of genes passing the q-value <0.05 threshold is larger with the qvalue function than the p.adjust difference.
+
+Why is this the case? Make a plot of the ratio of these two estimates to help answer the question.
+One of the two procedures is flawed.
+The two functions are estimating different things.
+The qvalue function estimates the proportion of genes for which the null hypothesis is true and provides a less conservative estimate
+The qvalue function estimates the proportion of genes for which the null hypothesis is true and provides a more conservative estimate
+
+
+FDR Exercises #7
+
+
+Note that this is an advanced question and that you can ask questions in the discussion forum.
+
+Create a Monte Carlo Simulation in which you simulate measurements 
+from 8,793 genes for 24 samples: 12 cases and 12 controls.
+```{r}
+
+
+n <- 24
+m <- 8793
+mat <- matrix(rnorm(n*m),m,n)
+
+```
+Now for 500 genes, there is a difference of 2 between cases and controls:
+
+```{r}       
+delta <- 2
+positives <- 500
+mat[1:positives,1:(n/2)] <- mat[1:positives,1:(n/2)]+delta
+
+
+```
+
+So the null hypothesis is true for 8793-500 genes. Using the notation from the videos 
+
+```{r}
+
+
+m=8793
+m0=8293
+m1=500
+set.seed(1)
+
+```
+Set the seed at 1, set.seed(1) and run this experiment 1,000 times with a Monte Carlo simulation. For each instance compute p-values using a t-test (using rowttests in the genefilter package) and create three lists of genes using:
+        
+        Bonferroni correction to achieve an FWER of 0.05,
+p-adjust estimates of FDR to achieve an FDR of 0.05, and
+qvalue estimates of FDR to to achieve an FDR of 0.05.
+
+For each of these three lists compute the number of false positives in the list and the number of false negatives: genes not in the list that should have been because the null hypothesis is not true (we added 2 to the controls).
+
+What is the false positive rate (false positives divided by m0) if we use Bonferroni?
+
+FDR Exercises #8 (1 point possible)
+
+From the same Monte Carlo simulation as in the question above, what is the false negative rate if we use Bonferroni?
+
+
+FDR Exercises #9 (1 point possible)
+
+From the same Monte Carlo simulation as in question #7, what is the false positive rate if we use q-values from p.adjust?
+
+FDR Exercises #10 (1 point possible)
+
+From the same Monte Carlo simulation as in question #7, what is the false negative rate if we use q-values from p.adjust?
+
+FDR Exercises #11 (1 point possible)
+
+From the same Monte Carlo simulation as in question #7, what is the false positive rate if we use q-values from qvalue function?
+
+FDR Exercises #12 (1 point possible)
+
+From the same Monte Carlo simulation as in question #7, what is the false negative rate if we use q-values from qvalue function?

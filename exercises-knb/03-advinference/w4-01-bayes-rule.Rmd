@@ -1,0 +1,27 @@
+---
+title: "w4-01-bayes-rule"
+author: "Knut Behrends"
+date: "January 2, 2016"
+output: html_document
+---
+## Bayes Rule Exercises #1 (1 point possible)
+
+A test for cystic fibrosis has an accuracy of 99%. Specifically, we mean that the probability of a positive test if you have the disease is 0.99 and this is also equal to the probability of testing negative if you don't have the disease:
+
+`Prob(+|D) = 0.99, Prob(−|no D) = 0.99`
+
+The cystic fibrosis rate in the general population is 1 in 3,900, `Prob(D) = 0.00025`
+
+If we select a random person and they test positive, what is probability that they have cystic fibrosis Prob(D|+)? 
+Hint: use Bayes Rule: `Pr(A|B) = Pr(B|A) * Pr(A) / Pr(B)`
+
+```{r}
+
+0.99 * 0.00025 /(0.99 * 0.00025 + 0.01 * 0.99975)
+
+```
+Rafa's solution:
+```{r}
+
+```
+

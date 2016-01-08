@@ -1,0 +1,299 @@
+---
+title: "w3-01-Statistical Models Exercises #1"
+author: "Knut Behrends"
+date: "January 2, 2016"
+output: html_document
+---
+
+###Statistical Models Exercises #1 (1 point possible)
+
+Suppose you have an urn with blue and red balls. If N balls at selected at random with replacement (you put the ball back after you pick it) we can denote the outcomes as random variables X1,…,XN that are 1 or 0. If the proportion of red balls is p then the distribution of each of these is:
+
+`Pr(Xi=1) = p.`
+
+These are also called Bernoulli trials. Note that these random variables are independent because we replace the balls. Flipping a coin is an example of this with p=0.5.
+
+You can show that the mean and variance are p and p(1−p) respectively. The binomial distribution gives us the distribution of the sum SN of these random variables. The probability that we see k red balls is given by:
+
+`Pr(SN=k)=(Nk)pk(1−p)N−k`
+
+In R the function `dbinom` gives you this result. The function pbinom gives us `Pr(SN≤k)`.
+
+This equation has many uses in the life sciences. We give some examples below.
+
+The probability of conceiving a girl is 0.49. What is the probability that a family with 4 children has 2 girls and 2 boys (you can assume no twins)?
+
+```{r}
+N <- 4 # trials
+k <- 2 # hits
+p <- 0.49 #probability
+
+dbinom(k, size=N, prob=p)
+
+```
+
+Generalized:
+
+Family can have 20 children maximum, and of these can 0..20 girls
+
+```{r}
+
+k_range <- seq(0,20,by=1) # 0 to 20 children 
+N_max <- 20
+y <- dbinom(k_range,size=N_max,p)
+plot(k_range,y)
+        
+        
+```
+
+###Statistical Models Exercises #2 (1 point possible)
+
+Use what you learned in Question #1 to answer these questions:
+
+What is the probability that a family with 10 children has 4 girls and 6 boys (you can assume no twins)?
+
+```{r}
+N <- 10 # trials
+k <- 4 # hits
+p <- 0.49 #probability
+
+dbinom(k, size=N, prob=p)
+
+```
+
+###Statistical Models Exercises #3 (1 point possible)
+
+The genome has 3 billion bases. About 20% are C, 20% are G, 30% are T and 30% are A. Suppose you take a random interval of 20 bases, what is the probability that the GC-content (proportion of Gs or Cs) is strictly above 0.5 in this interval (you can assume independence)?
+
+```{r}
+N <- 20 # trials
+k <- 10 # hits
+p <- (0.2 + 0.2) #probability (G + C)/(G + C + A +T)
+
+pbinom(q=k , size=N, prob=p, lower.tail = FALSE)
+# rafa: 1-pbinom(10,20,0.4)
+```
+
+###Statistical Models Exercises #4 (1 point possible)
+
+The following two questions are motivated by this event:
+
+> [Powerball pot soars past $550MILLION as 130,000 tickets are sold a minute in 11th hour frenzy before historic drawing](http://www.dailymail.co.uk/news/article-2239795/Powerball-pot-soars-past-550MILLION-130-000-tickets-sold-minute-11th-hour-frenzy-historic-drawing.html)
+
+The probability of winning the lottery is 1 in 175,223,510. If 189,000,000 randomly generated (with replacement) tickets are sold, what is the probability that at least one winning tickets is sold? (give your answer as a proportion not percentage)
+
+```{r}
+p=1/175223510 ##chances of winning
+N=189000000 ## tickets sold
+k <- 0 # hits
+
+pbinom(q=k , size=N, prob=p, lower.tail = FALSE)
+
+```
+
+###Statistical Models Exercises #5 (1 point possible)
+
+Using the information from the previous question, what is the probability that two or more winning tickets are sold?
+```{r}
+p=1/175223510 ##chances of winning
+N=189000000 ## tickets sold
+k <- 1 # hits
+
+pbinom(q=k , size=N, prob=p, lower.tail = FALSE)
+
+```
+
+###Statistical Models Exercises #6 (Normal approximation) (1 point possible)
+
+We can show that the binomial distribution is approximately normal with N is large and p is not too close to 0 or 1. This means that for the distribution of the sum SN of random variables
+
+`SN − E(SN)/ sqrt(Var(SN))`
+
+is approximately normal with mean 0 and SD 1. 
+
+Using the results for sums of independent random variables we learned in a previous course, we can show that `E(SN) = N * p` and `Var(Sn) = N * p * (1 − p)`.
+
+The genome has 3 billion bases. About 20% are C, 20% are G, 30% are T and 30% are A. Suppose you take a random interval of 20 bases, what is the exact probability that the GC-content (proportion of Gs of Cs) is greater than 0.35 and smaller or equal to 0.45 in this interval?
+
+```{r}
+N <- 20 # trials
+k1 <- 0.35 * N # hits
+k2 <- 0.45 * N # hits
+p <- 0.4 #probability (G + C)/(G + C + A +T)
+
+
+
+p1 <- pbinom(q=k1, size=N, prob=p, lower.tail = TRUE)
+p2 <- pbinom(q=k2, size=N, prob=p, lower.tail = FALSE)
+
+p_intv <- 1 - p1 - p2
+
+#rafa:pbinom(9,20,0.4)-pbinom(7,20,0.4)
+
+
+```
+
+###Statistical Models Exercises #7 (1 point possible)
+
+For the question above, what is the normal approximation to the probability?
+
+`SN - E(SN)/ sqrt(Var(SN)) `
+
+E(SN) = N * p
+
+```{r}
+# rafa:
+N <- 20
+b <- (9 - N * .4)/sqrt(N*.4*.6)
+a <- (7 - N *.4)/sqrt(N*.4*.6)
+pnorm(b)-pnorm(a)
+```
+
+###Statistical Models Exercises #8 (1 point possible)
+
+Repeat question 4.1.3, but using an interval of 1000 bases. What is the difference (in absolute value) between the normal approximation and the exact probability (using binomial) of the GC-content being greater than 0.35 and lesser or equal to 0.45?
+
+
+```{r}
+
+
+N <- 1000
+
+b <- (0.45*N - N * .4)/sqrt(N*.4*.6)
+a <- (0.35*N - N *.4)/sqrt(N*.4*.6)
+(p_intv_norm <- pnorm(b)-pnorm(a))
+
+p_intv_binom <- pbinom(0.45*N,N,0.4)-pbinom(0.35*N,N,0.4)
+abs(p_intv_binom - p_intv_norm)
+
+# rafa:
+# exact = pbinom(450,1000,0.4)-pbinom(350,1000,0.4)
+# b <- (450 - 1000*.4)/sqrt(1000*.4*.6)
+# a <- (350 - 1000*.4)/sqrt(1000*.4*.6)
+# approx <- pnorm(b)-pnorm(a)
+# abs(exact-approx) 
+# = 9.729e-06
+```
+
+###Statistical Models Exercises #9 (1 point possible)
+
+The Cs in our genomes can be [*methylated*](http://en.wikipedia.org/wiki/DNA_methylation) or unmethylated. Suppose we have a large (millions) group of cells in which a proportion p of a C of interest are methylated. We break up the DNA of these cells and randomly select pieces and end up with N pieces that contain the C we care about. 
+
+This means that the probability of seeing k methylated Cs is binomial:
+
+```{r eval=FALSE}
+
+exact = dbinom(k,N,p)
+```
+
+
+We can approximate this with the normal distribution:
+```{r eval=FALSE}
+a <- (k+0.5 - N*p)/sqrt(N*p*(1-p))
+b <- (k-0.5 - N*p)/sqrt(N*p*(1-p))
+approx = pnorm(a) - pnorm(b)
+
+```
+
+
+Let
+
+```{r}
+
+#exact = dbinom(k,N,p)
+Ns <- c(5,10,30,100)
+ps <- c(0.01,0.10,0.5,0.9,0.99)
+
+```
+
+Compare the normal approximation and exact probability (from binomial) of the proportion of Cs being k=1,…,N−1. Plot the exact versus approximate probability for each p- and N- combination.
+
+```{r}
+
+approx <- function(k, N, p){
+        a <- (k+0.5 - N*p)/sqrt(N*p*(1-p))
+        b <- (k-0.5 - N*p)/sqrt(N*p*(1-p))
+        return(abs(pnorm(b)-pnorm(a)))
+
+}
+
+npcomb <- expand.grid(N=Ns, p=ps)
+for (i in 1:nrow(npcomb)){
+        N <- npcomb[i,"N"]
+        p <- npcomb[i,"p"]
+        (exact <- dbinom(1:N-1, N, p))
+        appr <- sapply(1:N-1, function(x){approx(x, N,p)})
+        if(N == 100) {
+                plot(exact, appr, xlab="exact", ylab="approx", main = paste0("N = ", N, ", p = ", p)) 
+                abline(0,1)
+        }
+}
+
+    
+```
+
+
+Study the plots and tell us which of the following is NOT true:
+
+* ~~The normal approximation works well when p is close to 0.5 even for small N=10.~~
+* ~~The normal approximation breaks down when p is close to 0 or 1 even for large N.~~
+* When N is 100 all approximations are spot on.
+* ~~When p=0.01 the approximation are terrible for N=5,10,30 and only OK for N=100.~~
+
+```{r eval=FALSE}
+#rafa's solution:
+Ns <- c(5,10,30,100)
+ps <- c(0.01,0.10,0.5,0.9,0.99)
+library(rafalib)
+mypar2(4,5)
+for(N in Ns){
+  ks <- 1:(N-1)
+  for(p in ps){
+    exact = dbinom(ks,N,p)
+    a = (ks+0.5 - N*p)/sqrt(N*p*(1-p))
+    b = (ks-0.5 - N*p)/sqrt(N*p*(1-p))
+    approx = pnorm(a) - pnorm(b)
+    LIM <- range(c(approx,exact))
+    plot(exact,approx,main=paste("N =",N," p = ",p),xlim=LIM,ylim=LIM,col=1,pch=16)
+    abline(0,1)
+  }
+}
+```
+
+###Statistical Models Exercises #10 (Poisson approximation) (1 point possible)
+
+We saw in the previous question that when p is very small, the normal approximation breaks down. If N is very large, then we can use the Poisson approximation.
+
+Earlier we computed the probability of 2 or more tickets winning the lottery when the odds of winning were 1 in 175,223,510 and 189,000,000 tickets were sold. Using the binomial we can run the code below to compute the probability of exactly two people winning to be:
+
+```{r}
+N <- 189000000
+p <- 1/175223510
+dbinom(2,N,p)
+
+```
+
+
+If we were to use the normal approximation, we would overestimate this as you can see by running this code:
+```{r}
+a <- (2+0.5 - N*p)/sqrt(N*p*(1-p))
+b <- (2-0.5 - N*p)/sqrt(N*p*(1-p))
+pnorm(a) - pnorm(b)
+
+```
+
+To use the Poisson approximation here use the rate `λ=Np` representing the number of tickets per 189,000,000 that win the lottery. Run the following code and note how much better the approximation is:
+
+```{r}
+dpois(2,N*p)
+```
+
+
+
+In this case it is practically the same because N is very very large and Np is not 0. These are the assumptions needed for the Poisson to work.
+
+What is the Poisson approximation for the probability of two or more person winning?
+```{r}
+1-sum(dpois(0:1,N*p))
+```
+

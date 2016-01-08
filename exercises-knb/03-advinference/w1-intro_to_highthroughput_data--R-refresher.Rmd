@@ -1,0 +1,67 @@
+---
+title: "Introduction to Advanced Statistics for the Life Sciences"
+author: "Knut"
+date: "Dec 14, 2015"
+output: html_document
+layout: page
+---
+
+```{r options, echo=FALSE}
+library(knitr)
+opts_chunk$set(fig.path=paste0("figure/", sub("(.*).Rmd","\\1",basename(knitr:::knit_concord$get('infile'))), "-"))
+```
+
+
+
+####### Week1 Quiz 1: R Refresher Exercises
+
+Here is an example from a gene expression dataset:
+
+```{r}
+library(GSE5859Subset)
+data(GSE5859Subset) ##this loads the three tables
+dim(geneExpression)
+```
+
+######### Questions
+
+```{r}
+# How many samples where processed on 2005-06-27?
+
+head(sampleInfo)
+nrow(sampleInfo[sampleInfo$date == "2005-06-27",])
+
+
+#How many of the genes represented in this particular technology are on chromosome Y?
+head(geneAnnotation)
+unique(geneAnnotation$CHR)
+
+tapply(geneAnnotation$SYMBOL, geneAnnotation$CHR == "chrY", length)
+#  sum(geneAnnotation$CHR=="chrY",na.rm=TRUE)
+
+#What is the log expression value of the for gene ARPC1A on the one subject that we measured on 2005-06-10?
+
+
+id <- na.omit(geneAnnotation[geneAnnotation$SYMBOL == 'ARPC1A',"PROBEID"])[1]
+fn <- sampleInfo[sampleInfo$date == "2005-06-10",]$filename
+geneExpression[rownames(geneExpression) == id, fn]
+
+
+```
+This problem is more advanced than the previous ones. Note that it might take you some time to solve and you should feel free to seek help in the discussion forum. The exercises is meant to motivate you to learn a an imporant R skills: creating functions to use with apply.
+
+Write a function that takes a vector of values e and a binary vector group coding two groups, and returns the p-value from a t-test: t.test( e[group==1], e[group==0])$p.value.
+
+Now define g to code cases (1) and controls (0) like this g <- factor(sampleInfo$group)
+
+Next use the function apply to run a t-test for each row of geneExpression and obtain the p-value. What is smallest p-value among all these t-tests? 
+
+```{r}
+pval <- function(e, group){
+        t.test(e[group == 1], e[group == 0])$p.value
+}
+g <- factor(sampleInfo$group)
+
+min(apply(geneExpression, 1, pval, g))
+```
+

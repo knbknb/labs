@@ -1,0 +1,202 @@
+---
+title: "w3-2-maxlikelihood"
+author: "Knut Behrends"
+date: "January 2, 2016"
+output: html_document
+---
+##  MLE Exercises #1 (1 point possible)
+
+In this assessment we are going to try to answer the question: is there a section of the human cytomegalovirus genome in which the rate of palindromes is higher than expected?
+
+Make sure you have the latest version of the dagdata library:
+```{r}
+
+
+library(devtools)
+#install_github("genomicsclass/dagdata")
+
+```
+and then load the palindrome data from the Human cytomegalovirus genome:
+```{r}
+
+library(dagdata)
+# human cytomegalovirus
+data(hcmv) # loads 'locations'
+
+
+```
+These are the locations of palindromes on the genome of this virus:
+```{r}
+
+
+library(rafalib)
+mypar()
+#bigpar()
+plot(locations,rep(1,length(locations)),ylab="",yaxt="n")
+
+```
+These palindromes are quite rare, p is very small. If we break the genome into bins of 4000 basepairs, then we have `N * p` not so small, and we might be able to use Poisson to model the number of palindromes in each bin:
+
+```{r}
+
+breaks=seq(0,4000*round(max(locations)/4000),4000)
+tmp=cut(locations,breaks)
+(counts=as.numeric(table(tmp)))
+
+```
+
+So if our model is correct counts should follow a Poisson distribution. The distribution seems about right:
+
+```{r}
+
+
+hist(counts)
+
+```
+
+Let X1,…,Xn be the random variables representing counts then
+
+`Pr(Xi=k) = λk / k! * exp(−λ)`
+
+So to fully describe this distribution we need `λ`. For this we will use MLE.
+
+To compute the Maximum Likelihood Estimate (MLE), we ask what is the probability of observing our data (which we denote with small caps) for a given λ:
+
+`L(λ) = Pr(X1=x1 and X2=x2 and …Xn=xn;λ)`
+
+We assume that the X are independent, thus the probabilities multiply:
+
+`L(λ) = Pr(X1=x1) × Pr(X2=x2) × ⋯ × Pr(Xn=xn)`
+
+Now we can write it in R. For example for `λ=4` we have:
+
+```{r}
+
+
+probs <- dpois(counts,4)
+likelihood <- prod(probs)
+likelihood
+
+```
+
+Run the code above to note that this is a tiny number. It is usually more convenient to compute log-likelihoods
+
+```{r}
+
+
+logprobs <- dpois(counts,4,log=TRUE)
+loglikelihood <- sum(logprobs)
+loglikelihood
+
+```
+
+Now write a function that takes `λ` and the vector of counts as input, and returns the log-likelihood. Compute this log-likelihood for `lambdas = seq(0,15,len=300)` and make a plot.
+
+```{r}
+myloglik <- function(lambda, counts){
+        logprobs <- sum(dpois(counts,lambda,log=TRUE))
+        loglikelihood <- sum(logprobs)
+        return(loglikelihood)
+
+}
+lambdas = seq(0,15,len=300)
+logliks <- sapply(lambdas, myloglik, counts)
+plot(lambdas, logliks)
+mle=lambdas[which.max(logliks)]
+abline(v=mle)
+```
+
+What value of lambdas maximizes the log-likelihood?
+
+```{r}
+mle
+```
+
+###  MLE Exercises #2 (1 point possible)
+
+The point of collecting this dataset was to try to determine if there is a region of the genome that has higher palindrome rate than expected. We can create a plot and see the counts per location:
+
+```{r}
+
+
+breaks=seq(0,4000*round(max(locations)/4000),4000)
+tmp=cut(locations,breaks)
+counts=as.numeric(table(tmp))
+binLocation=(breaks[-1]+breaks[-length(breaks)])/2
+plot(binLocation,counts,type="l",xlab=)
+
+```
+What is the center of the bin with the highest count?
+
+```{r}
+binLocation[which.max(counts)]
+```
+
+###  MLE Exercises #3 (1 point possible)
+
+For the question above, what is the maximum count?
+
+###  MLE Exercises #4 (1 point possible)
+
+Now that we have identified the location with the largest palindrome count, we want to know if by chance we could see a value this big.
+
+If X is a Poisson random variable with rate
+
+```{r}
+
+lambda = mean(counts[ - which.max(counts) ])
+
+```
+
+What is the probability of seeing a count of 14 or more?
+
+```{r}
+(p14 <- 1-sum(dpois(0:13,lambda)))
+
+# rafa's solution:   pval = 1 - ppois(13,lambda)
+```
+
+
+###  MLE Exercises #5 (1 point possible)
+
+From the question above, we obtain a p-value smaller than 0.001 for a count of 14. Why is it problematic to report this p-value as strong evidence of a location that is different?
+
+* ~~Poisson in only an approximation.~~
+* We selected the highest region out of 57 and need to adjust for multiple testing.
+* ~~λ is an estimate, a random variable, and we didn't take into account its variability.~~
+* ~~We don't know the effect size.~~
+
+###  MLE Exercises #6 (1 point possible)
+
+Use the Bonferroni correction to determine the p-value cut-off that guarantees a FWER of 0.05. What is this p-value cutoff?
+
+```{r}
+
+(cutoff = 0.05/length(counts))
+
+p14  < cutoff 
+```
+
+Note that our observed p-value satisfy the Bonferroni correction. 
+
+###  MLE Exercises #7 (1 point possible)
+
+Create a qq-plot to see if our Poisson model is a good fit:
+
+```{r}
+
+
+ps <- (seq(along=counts) - 0.5)/length(counts)
+lambda <- mean( counts[ -which.max(counts)])
+poisq <- qpois(ps,lambda)
+qqplot(poisq,counts)
+abline(0,1)
+
+```
+
+How would you characterize this qq-plot?
+
+* ~~Poisson is a terrible approximation.~~
+* Poisson is a very good approximation except for one point that we actually think is associated with a region of interest.
+* ~~There are too many 1s in the data.~~
+* ~~A normal distribution provides a better approximation. ~~

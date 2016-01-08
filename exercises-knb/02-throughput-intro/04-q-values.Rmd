@@ -1,0 +1,288 @@
+---
+title: "04-q-values"
+author: "Knut Behrends"
+date: "December 21, 2015"
+output: html_document
+---
+
+
+In this assessment we will define error controlling procedures for experimental data. We will make list of genes based on q-values. We will also assess your understanding of false positives rates and false negative rates by asking you to create a Monte Carlo simulation.
+
+You will need to install the following libraries:
+
+```{r}
+ 
+library(devtools)
+library(rafalib)
+#install_github("genomicsclass/GSE5859Subset")
+#install_bioc("genefilter")
+#install_bioc("qvalue")
+
+```
+
+FDR Exercises #1 (1/1 point)
+
+Load the gene expression data
+```{r}
+
+
+library(GSE5859Subset)
+data(GSE5859Subset)
+
+```
+We are interested in comparing gene expression between the two groups defined in the sampleInfo table.
+
+Compute a p-value for each gene using the function rowttests from the genefilter package in Bioconductor.
+```{r}
+
+
+library(genefilter)
+#?rowttests
+
+```
+How many genes have p-values smaller than 0.05?
+        
+```{r}
+g <- factor(sampleInfo$group)
+pvals = rowttests(geneExpression,g)$p.value
+sum(pvals<0.05)
+```
+
+1383
+
+
+FDR Exercises #2 (1/1 point)
+
+Apply the Bonferroni correction to the p-values obtained in question #1 to achieve a FWER of 0.05. How many genes are called significant under this procedure?
+
+```{r}
+k = 0.05/length(pvals)
+sum(pvals<k)
+```
+
+10
+
+Note that we went from over a thousand to just 10. One practical question we should ask is "are we being too conservative?". Note that we have not really assessed false negatives at all yet. 
+
+FDR Exercises #3 (1 point possible)
+
+Note that the FDR is a property of a list of features, not each specific feature. The q-value relates FDR to an individual feature. To define the q-value we order features we tested by p-value, then compute the FDRs for a list with the most significant, the two most significant, the three most significant, etc... The FDR of the list with the, say, m most significant tests is defined as the q-value of the m-th most significant feature. 
+
+In other words, the *q-value of a feature* is *the FDR of the biggest list that includes that gene*.
+
+In R, we can compute the q-value using the `p.adjust()` function with the FDR option. Read the help file for `p.adjust` and then, for our gene expression dataset, compute how many genes achieve an FDR < 0.05
+
+
+```{r}
+#?p.adjust
+pvals.fdr <- p.adjust(pvals, method = "fdr")
+length(pvals.fdr[pvals.fdr < 0.05])
+
+```
+
+
+
+Note that controlling the FDR at 0.05 gives us 3 more genes than the Bonferroni correction. Note that we are controlloing two very different error rates. Here we are saying that we think this list of 13 genes has about 5% false positives. The Bonferroni procedure gave us a list ot 10 genes for which we were quite certain had no false positives. Note again that we have not discussed false negatives.
+
+
+FDR Exercises #4 (1 point possible)
+
+Now use the qvalue function, in the Bioconductor qvalue package, to estimate q-values using the procedure described by Storey.
+
+Using this estimate how many genes have q-values below 0.05?
+
+```{r}
+library(qvalue)
+length(pvals)
+p.storey <- qvalue::qvalue(pvals, fdr.level=0.05)
+length(p.storey$qvalues[p.storey$qvalues < 0.05])
+
+```
+
+Now the list has increased to 22. However, we are also claiming this list has an FDR of 5%. The reason this list is different is as folllows. As explained in the videos, qvalue *estimates* FDR differently and is less conservative. Remember that the theory provides bounds for FDR: it guarantees FDR will be less than 0.05. If qvalue does in fact estimate pi0 well then it will provide a list with FDR closer to 0.05. 
+
+FDR Exercises #5 (1 point possible)
+
+Read the help file for qvalue and report the estimated proportion of genes for which the null hypothesis is true, pi0=m0/m.
+
+
+?qvalue
+?pi0est
+
+
+FDR Exercises #6 (1 point possible)
+
+Note that we have the number of genes passing the q-value <0.05 threshold is larger with the qvalue function than the p.adjust difference.
+
+Why is this the case? Make a plot of the ratio of these two estimates to help answer the question.
+
+Answer: *The qvalue function estimates the proportion of genes for which the null hypothesis is true and provides a less conservative estimate*
+
+
+```{r}
+plot(p.storey$qvalue/pvals.fdr)
+abline(h=qvalue(pvals)$pi0,col=2)
+
+```
+To get an idea of how pi0 is estimated, note that if we look at the histogram, pi0 roughly tells us the proportion that looks about uniform:
+
+```{r}
+
+hist(pvals,breaks=seq(0, 1, len=21))
+expectedfreq <- length(pvals) / 20 #per bin
+abline(h=expectedfreq * qvalue(pvals)$pi0, col=2, lty=2)
+
+```
+
+FDR Exercises #7 (1 point possible)
+
+Note that this is an advanced question and that you can ask questions in the discussion forum.
+
+Create a Monte Carlo Simulation in which you simulate measurements from 8,793 genes for 24 samples: 12 cases and 12 controls.
+ 
+Now for 500 genes, there is a difference of 2 between 500 cases and many controls:
+```{r}
+
+delta <- 2
+positives <- 500
+
+```
+So the null hypothesis is true for 8793-500 genes. Using the notation from the videos , `m=8793`, `m0=8293` and `m1=500`.
+
+Set the seed at 1, set.seed(1) and run this experiment 1,000 times with a Monte Carlo simulation. For each instance compute p-values using a t-test (using rowttests in the genefilter package) and create three lists of genes using:
+
+-    Bonferroni correction to achieve an FWER of 0.05,
+-    p.adjust() estimates of FDR to achieve an FDR of 0.05, and
+-    qvalue() estimates of FDR to to achieve an FDR of 0.05.
+```{r}
+set.seed(1)
+library(qvalue)
+library(genefilter)
+n <- 24
+m <- 8793
+B <- 1000
+delta <-2
+positives <- 500
+g <- factor(rep(c(0,1),each=12))
+result <- replicate(B,{
+  mat <- matrix(rnorm(n*m),m,n)
+  mat[1:positives,1:(n/2)] <- mat[1:positives,1:(n/2)]+delta
+  pvals = rowttests(mat,g)$p.val
+  ##Bonferroni
+  FP1 <- sum(pvals[-(1:positives)]<=0.05/m)  
+  FN1 <- sum(pvals[1:positives]>0.05/m)
+   #p.adjust q-value
+  qvals1 = p.adjust(pvals,method="fdr")
+  FP2 <- sum(qvals1[-(1:positives)]<=0.05)
+  FN2 <- sum(qvals1[1:positives]>0.05)
+  #qvalue q-value
+  qvals2 = qvalue(pvals)$qvalue
+  FP3 <- sum(qvals2[-(1:positives)]<=0.05)
+  FN3 <- sum(qvals2[1:positives] > 0.05)
+  c(FP1,FN1,FP2,FN2,FP3, FN3)
+  })
+  
+
+#Then the false neg rate is
+rowMeans(result)/(positives)
+```
+
+
+```{r}
+set.seed(1)
+nruns <- 1000
+alpha <- 0.05
+n <- 24
+m <- 8793
+g <- factor( c(rep(FALSE,n/2),rep(TRUE,n/2)) )
+res <- lapply(1:nruns, function(x, alph){
+        mat <- matrix(rnorm(n*m), m, n)
+        #the 500 rows get more
+        # first half of columns
+        mat[1:positives,1:(n/2)] <- mat[1:positives,1:(n/2)]+delta
+        pvals = rowttests(mat,g)$p.value
+        
+        #fwer <- p.adjust(pvals, method = "bonferroni")
+        fwer <- pvals <= alph 
+        fdr <- p.adjust(pvals, method = "BH") <= alph
+        qvals <- qvalue(pvals, fdr.level = alph)$qvalues <= alph
+        
+        list("fwer"=fwer, "fdr"=fdr, "qvals" = qvals)
+        
+}, alpha) 
+
+fwer <- sapply(res, "[[", "fwer")
+fdr <- sapply(res, "[[", "fdr")
+qv <- sapply(res, "[[", "qvals")
+#rm(res)
+
+```
+
+For each of these three lists compute the number of false positives in the list and the number of false negatives: genes not in the list that should have been because the null hypothesis is not true (we added 2 to the controls).
+```{r}
+
+m0 <- (m - positives)
+# it is FALSE that there is no difference between treat and control 
+nullHypothesis <- c(rep(TRUE, positives), rep(FALSE, m0))
+
+
+```
+
+What is the false positive rate (false positives divided by m0) if we use Bonferroni?
+```{r}
+findRate <- function(tab, col1=1, col2=1, denom=1){
+    table(tab[,sample(ncol(tab), 1)], nullHypothesis)
+        tab.FP.bonf <- sapply(1:nruns, function(i){
+                        tab2 <- table(tab[,i], nullHypothesis)
+                        ifelse(nrow(tab2)> 1, tab2[col1,col2], 0)
+        })
+        #denom = m0
+        sum(tab.FP.bonf)/denom
+}
+findRate(fwer, 2, 1, m0)
+
+sum(fwer & nullHypothesis)/nruns/m0
+```
+
+unanswered
+
+FDR Exercises #8 (1 point possible)
+
+From the same Monte Carlo simulation as in the question above, what is the false negative rate if we use Bonferroni?
+(genes not in the list that should have been because the null hypothesis is not true)
+```{r}
+table(fwer[,sample(ncol(fwer), 1)], nullHypothesis)
+findRate(fwer, 1, 2, m0)
+
+
+```
+
+
+FDR Exercises #9 (1 point possible)
+
+From the same Monte Carlo simulation as in question #7, what is the false positive rate if we use q-values from p.adjust?
+
+FDR Exercises #10 (1 point possible)
+
+From the same Monte Carlo simulation as in question #7, what is the false negative rate if we use q-values from p.adjust?
+
+FDR Exercises #11 (1 point possible)
+
+From the same Monte Carlo simulation as in question #7, what is the false positive rate if we use q-values from qvalue function?
+
+```{r}
+
+table(qv[,sample(ncol(qv), 1)], nullHypothesis)
+findRate(qv, 2, 1, m0)
+
+```
+
+Loading
+
+FDR Exercises #12 (1 point possible)
+
+From the same Monte Carlo simulation as in question #7, what is the false negative rate if we use q-values from qvalue function?
+```{r}
+findRate(qv, 1, 2, m0)/nruns
+```
+
