@@ -1,6 +1,6 @@
 footnotes.md
-*/figure
-*/cache
+*/figure/*
+*/cache/*
 */.cache
 */*.html
 */*.md
@@ -18,3 +18,9 @@ footnotes.md
 */.DS_Store
 */.Rhistory
 *_exercises
+*.png
+.Rproj.user
+*.Rproj
+exercises-knb/02-linmod/figure/*
+exercises-knb/03-advinference/figure/*
+exercises-knb/04-modeling/figure/*
