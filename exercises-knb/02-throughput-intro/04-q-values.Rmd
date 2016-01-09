@@ -154,7 +154,9 @@ Set the seed at 1, set.seed(1) and run this experiment 1,000 times with a Monte 
 -    Bonferroni correction to achieve an FWER of 0.05,
 -    p.adjust() estimates of FDR to achieve an FDR of 0.05, and
 -    qvalue() estimates of FDR to to achieve an FDR of 0.05.
+
 ```{r}
+# Rafa's solution:
 set.seed(1)
 library(qvalue)
 library(genefilter)
@@ -179,16 +181,21 @@ result <- replicate(B,{
   qvals2 = qvalue(pvals)$qvalue
   FP3 <- sum(qvals2[-(1:positives)]<=0.05)
   FN3 <- sum(qvals2[1:positives] > 0.05)
-  c(FP1,FN1,FP2,FN2,FP3, FN3)
+  c(fp.bonf=FP1,fn.bonf=FN1,fp.bh=FP2,fn.bh=FN2,fp.storey=FP3, fn.storey=FN3)
   })
   
-
-#Then the false neg rate is
-rowMeans(result)/(positives)
+#Then the false pos rates are
+cat("False positive rates:")
+(ans <- rowMeans(result[c(1,3,5),])/(m-positives))
+#and the false neg rates are
+cat("False negative rates:")
+(ans <- rowMeans(result[c(2,4,6),])/(positives))
 ```
 
+My attempts were wrong:
 
-```{r}
+
+```{r eval=FALSE}
 set.seed(1)
 nruns <- 1000
 alpha <- 0.05
@@ -219,7 +226,7 @@ qv <- sapply(res, "[[", "qvals")
 ```
 
 For each of these three lists compute the number of false positives in the list and the number of false negatives: genes not in the list that should have been because the null hypothesis is not true (we added 2 to the controls).
-```{r}
+```{r eval=FALSE}
 
 m0 <- (m - positives)
 # it is FALSE that there is no difference between treat and control 
@@ -229,7 +236,7 @@ nullHypothesis <- c(rep(TRUE, positives), rep(FALSE, m0))
 ```
 
 What is the false positive rate (false positives divided by m0) if we use Bonferroni?
-```{r}
+```{r eval=FALSE}
 findRate <- function(tab, col1=1, col2=1, denom=1){
     table(tab[,sample(ncol(tab), 1)], nullHypothesis)
         tab.FP.bonf <- sapply(1:nruns, function(i){
@@ -244,17 +251,17 @@ findRate(fwer, 2, 1, m0)
 sum(fwer & nullHypothesis)/nruns/m0
 ```
 
-unanswered
+
 
 FDR Exercises #8 (1 point possible)
 
 From the same Monte Carlo simulation as in the question above, what is the false negative rate if we use Bonferroni?
 (genes not in the list that should have been because the null hypothesis is not true)
-```{r}
+```{r eval=FALSE}
 table(fwer[,sample(ncol(fwer), 1)], nullHypothesis)
 findRate(fwer, 1, 2, m0)
 
-
+# WRONG
 ```
 
 
@@ -270,7 +277,7 @@ FDR Exercises #11 (1 point possible)
 
 From the same Monte Carlo simulation as in question #7, what is the false positive rate if we use q-values from qvalue function?
 
-```{r}
+```{r eval=FALSE}
 
 table(qv[,sample(ncol(qv), 1)], nullHypothesis)
 findRate(qv, 2, 1, m0)
@@ -282,7 +289,7 @@ Loading
 FDR Exercises #12 (1 point possible)
 
 From the same Monte Carlo simulation as in question #7, what is the false negative rate if we use q-values from qvalue function?
-```{r}
+```{r eval=FALSE}
 findRate(qv, 1, 2, m0)/nruns
 ```
 

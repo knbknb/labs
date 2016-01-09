@@ -2,13 +2,13 @@
 # with and without vectorization
 library(downloader) 
 url <- "https://raw.githubusercontent.com/genomicsclass/dagdata/master/inst/extdata/femaleControlsPopulation.csv" 
-filename <- "femaleControlsPopulation.csv" 
+filename <- "../03-advinference/femaleControlsPopulation.csv" 
 if (!file.exists(filename)) download(url,destfile=filename) 
 set.seed(1) 
 population = unlist( read.csv("femaleControlsPopulation.csv") )
 
 #To give an example of how we can simulate V and S we constructed a simulation with:
-        
+B <- 1000 ##number of simulations        
 alpha <- 0.05
 N <- 12
 m <- 100
@@ -32,7 +32,7 @@ sum(pVals < 0.05)
 #We then ran a Monte Carlo simulation by repeating a procedure in which 
 #10,000 tests were run one by one using sapply.
 
-B <- 1000 ##number of simulations 
+ 
 calls <- 0
 system.time(
         VandS <<- replicate(B,{
